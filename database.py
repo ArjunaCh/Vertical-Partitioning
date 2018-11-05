@@ -1,36 +1,14 @@
-import numpy as np
-from sklearn.metrics import pairwise_distances
-from scipy.spatial.distance import cosine
 # import pylab
 import math
+
+import numpy as np
 import scipy.cluster.hierarchy as sch
+from scipy.spatial.distance import cosine
+from sklearn import metrics
+from sklearn.cluster import SpectralClustering
+from sklearn.metrics import pairwise_distances
 
-AUM=[[1,0,1,0],
-     [0,1,1,0],
-     [0,1,0,1],
-     [0,0,1,1]]
-
-# f = open ( 'aummatrix.txt' , 'r')
-# AUM=[ map(int,line.split(',')) for line in f ]
-#print (AUM)
-AF=[45,5,75,3]
-AFM=[[15,5,25,3],
-    [20,0,25,0],
-    [10,0,25,0]]
-A=4
-Q=4
-S=3
-sum1=0
-AAM = np.zeros((A,A))
-CA = np.zeros((A,A))
-
-array = []
-maxIndex = []
-maxIndex2 = []
-index = 0
-
-
-
+## ============ Method body ================ ##
 
 #Calculate global bond energy
 def cont(ai, ak, aj):
@@ -100,6 +78,33 @@ def BEA(AA):
     return CA
     
 
+## =========== Main ================ ##
+
+AUM=[[1,0,1,0],
+     [0,1,1,0],
+     [0,1,0,1],
+     [0,0,1,1]]
+
+# f = open ( 'aummatrix.txt' , 'r')
+# AUM=[ map(int,line.split(',')) for line in f ]
+#print (AUM)
+AF=[45,5,75,3]
+AFM=[[15,5,25,3],
+    [20,0,25,0],
+    [10,0,25,0]]
+A=4
+Q=4
+S=3
+sum1=0
+AAM = np.zeros((A,A))
+CA = np.zeros((A,A))
+
+array = []
+maxIndex = []
+maxIndex2 = []
+index = 0
+
+
 print ("The no of attribute in the AUM matrix along Column and AUM matrix:")
 print (A)
 print (AUM)
@@ -131,6 +136,7 @@ print ("\nThe Attribute affinity matrix is :\n")
 print (AAM)
 
 BEA(AAM)
+
 #Rearrange the rows according to the order of columns
 for i in range(len(maxIndex)):
     CA[[maxIndex[i], maxIndex2[i]],:] = CA[[maxIndex2[i], maxIndex[i]],:]
@@ -138,20 +144,11 @@ print ("\nThe clustered affinity matrix is:\n")
 print(CA)
 
 
-
-
-
 print ("\n\nThe partion algorithm stat from here:")
 VA = np.zeros((A,Q))
 SA = np.zeros((A,A))
 print(VA)
 print(SA)
-# for i in range(A):
-#     for j in range(Q):
-#         if (AUM[i][j]==1):
-#             VA[j][i]=AF[i]
-#         else:
-#             VA[j][i]=0
 
 for i in range(A):
     for j in range(Q):
@@ -168,30 +165,6 @@ print (VA)
 print ("\n\nThe similarity matrix is given by:")
 SA = 1-pairwise_distances(VA, metric="cosine")
 print (SA)
-
-
-def calculateInitialThresold(SA):
-    DSA = pairwise_distances(VA, metric="cosine")
-    print ("\n\n Dissimilarity :- \n")
-    print (DSA)
-
-    #DSA = 1 - pairwise_distances(VA, metric="cosine")
-    w = 1
-    Threshold = []
-    print ("\n\n Threshold calculation :- ")
-    for i in range(A):
-        minimum_threshold = DSA[i][0]
-        min_difference = 1000
-        total_diff = 0
-        for k in range(A):
-            for j in range(A):
-                total_diff += abs(DSA[i][j] - w*DSA[i][k])
-            if (total_diff < min_difference):
-                min_difference = total_diff
-                minimum_threshold = DSA[i][k]
-        Threshold.append(minimum_threshold)
-    print ("\n\n Initial Threshold :- \n")
-    print (Threshold)
 
 
 F1=[]
@@ -211,11 +184,30 @@ print (F1)
 print (F2)
 
 
-# ========= Similarity based on clustred =====
-print ("\n\nThe similarity matrix is given by after CAF:")
-dissimalarity_CA = pairwise_distances(CA, metric="cosine")
-print (dissimalarity_CA)
-calculateInitialThresold(SA)
+sc = SpectralClustering(2, affinity='precomputed', n_init=100)
+sc.fit(CA)
+spectralCLuteringLables = sc.labels_
+F1 = []
+F2 = []
+
+for i in range(len(maxIndex)):
+    temp = spectralCLuteringLables[maxIndex2[i]]
+    spectralCLuteringLables[maxIndex2[i]] = spectralCLuteringLables[maxIndex[i]]
+    spectralCLuteringLables[maxIndex[i]] = temp
+print ("\n\n Spectral Clustering based on clusterd Affenity :- ")
+print (sc.labels_)
+
+
+for i in range(A):
+    if (spectralCLuteringLables[i] == 0):
+        F1.append(i)
+    else:
+        F2.append(i)
+
+print ("\n\n Fragment after spectral clustering :- ")
+print (F1)
+print (F2)
+
 
 
 # print ("\nThe query executed in centralized environment\n\n")
@@ -260,4 +252,3 @@ calculateInitialThresold(SA)
 #         print ("The time of query execution if one query executed in 1ms is:")
 #         print (AF[i]*1)
 #     L=[]
-
